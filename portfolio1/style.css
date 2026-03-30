@@ -403,3 +403,133 @@ body.evaporate-bg::before {
   opacity: 1;
   transform: translateX(0);
 }
+
+
+/* ============================================================
+   RESPONSIVE MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* --- NAV --- */
+  nav {
+    padding: 1.5rem 0;
+  }
+
+  .logo {
+    font-size: 28px;
+    letter-spacing: 0.4rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .separator {
+    width: 90%;
+    height: 2px;
+  }
+
+  /* --- HERO : Colonne au lieu de ligne --- */
+  .hero {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 6%;
+    padding-top: 140px;
+    gap: 2rem;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .hero-content {
+    text-align: center;
+    order: 2;
+  }
+
+  .hero-content h1 {
+    font-size: 2.2rem;
+    max-width: 100%;
+    margin-bottom: 0.8rem;
+  }
+
+  .hero-content p {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  button {
+    padding: 0.8rem 1.6rem;
+    font-size: 0.75rem;
+  }
+
+  /* --- IMAGE : Réduite et centrée --- */
+  .hero-image-container {
+    order: 1;
+    width: 75vw;
+    max-width: 300px;
+    height: 55vw;
+    max-height: 380px;
+  }
+
+  /* --- MENU BURGER --- */
+  .menu-stack {
+    top: 16px;
+    left: 16px;
+  }
+
+  .menu-main-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .burger-icon {
+    width: 20px;
+    height: 12px;
+  }
+
+  /* Tooltips à droite sur mobile, pas de risque de débordement */
+  .floor-dot::after {
+    left: 52px;
+    font-size: 0.7rem;
+    padding: 5px 10px;
+  }
+}
+
+/* --- Très petits écrans (iPhone SE, etc.) --- */
+@media (max-width: 380px) {
+  .logo {
+    font-size: 22px;
+    letter-spacing: 0.25rem;
+  }
+
+  .hero-content h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero-image-container {
+    width: 85vw;
+    height: 60vw;
+  }
+}
+
+/* --- Landscape mobile (téléphone en mode paysage) --- */
+@media (max-width: 768px) and (orientation: landscape) {
+  .hero {
+    flex-direction: row;
+    padding-top: 90px;
+    gap: 4%;
+    align-items: center;
+  }
+
+  .hero-image-container {
+    order: 0;
+    width: 35vw;
+    height: 65vw;
+    max-height: 85vh;
+  }
+
+  .hero-content h1 {
+    font-size: 1.6rem;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+}
