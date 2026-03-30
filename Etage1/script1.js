@@ -13,7 +13,14 @@ const sideYear = document.getElementById("side-year");
 const progressBar = document.getElementById("progress-bar");
 
 const total = elements.length;
-const radius = 260;
+
+// Rayon adaptatif selon la taille de l'écran
+function getRadius() {
+  return window.innerWidth < 600 ? 130 : window.innerWidth < 900 ? 190 : 260;
+}
+let radius = getRadius();
+window.addEventListener("resize", () => { radius = getRadius(); positionCards(rotation); });
+
 const SEUIL_CENTRE = 10;
 
 let rotation = 0;
@@ -202,7 +209,70 @@ window.addEventListener("keydown", (e) => {
 });
 
 
+/**
+ * TOUCH SUPPORT (Mobile)
+ */
+let touchStartX = 0;
+let touchStartY = 0;
+let lastTouchX = 0;
+let isTouching = false;
+let touchVelocity = 0;
+let lastTouchTime = 0;
 
+window.addEventListener("touchstart", (e) => {
+  if (selectedCard) return;
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  lastTouchX = touch.clientX;
+  touchVelocity = 0;
+  lastTouchTime = performance.now();
+  isTouching = true;
+  clearTimeout(snapTimeout);
+}, { passive: true });
+
+window.addEventListener("touchmove", (e) => {
+  if (selectedCard || !isTouching) return;
+  const touch = e.touches[0];
+  const now = performance.now();
+  const dt = now - lastTouchTime;
+
+  // Détermine si le geste est plutôt horizontal (rotation) ou vertical (navigation)
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+
+  // On laisse défiler verticalement seulement si l'angle est clairement vers le bas
+  if (Math.abs(dy) > Math.abs(dx) * 2 && Math.abs(dy) > 30) return;
+
+  const delta = touch.clientX - lastTouchX;
+  touchVelocity = dt > 0 ? delta / dt : 0;
+
+  rotation -= delta * 0.5; // Sensibilité du swipe
+  positionCards(rotation);
+  hideScrollHint();
+
+  lastTouchX = touch.clientX;
+  lastTouchTime = now;
+}, { passive: true });
+
+window.addEventListener("touchend", (e) => {
+  if (!isTouching) return;
+  isTouching = false;
+
+  // Inertie après le lâcher
+  let velocity = touchVelocity * 15;
+  const decelerate = () => {
+    if (Math.abs(velocity) < 0.3) {
+      snapToClosest();
+      return;
+    }
+    rotation -= velocity;
+    velocity *= 0.88; // Friction
+    positionCards(rotation);
+    requestAnimationFrame(decelerate);
+  };
+  requestAnimationFrame(decelerate);
+}, { passive: true });
 
 
 /**
