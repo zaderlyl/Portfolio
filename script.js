@@ -87,7 +87,7 @@ if (exploreBtn) {
 
         // On attend que les animations se terminent (800ms) avant de changer d'adresse
         setTimeout(() => {
-            window.location.href = "./Etage1/etage1.html";
+            window.location.href = "/Etage1/etage1.html";
         }, 800);
     });
 }
@@ -122,7 +122,7 @@ function enterMuseum() {
 
     // 4. Une fois que l'écran est tout blanc (après 2s), on charge la page Bio
     setTimeout(() => {
-        window.location.href = "./bio/bio.html";
+        window.location.href = "/bio/bio.html";
     }, 2000); 
 }
 
