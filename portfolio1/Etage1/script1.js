@@ -13,7 +13,14 @@ const sideYear = document.getElementById("side-year");
 const progressBar = document.getElementById("progress-bar");
 
 const total = elements.length;
-const radius = 260;
+
+// Rayon adaptatif selon la taille de l'écran
+function getRadius() {
+  return window.innerWidth < 600 ? 130 : window.innerWidth < 900 ? 190 : 260;
+}
+let radius = getRadius();
+window.addEventListener("resize", () => { radius = getRadius(); positionCards(rotation); });
+
 const SEUIL_CENTRE = 10;
 
 let rotation = 0;
