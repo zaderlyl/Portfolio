@@ -666,3 +666,120 @@ body.transition-up::before {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
+
+/* ============================================================
+   RESPONSIVE MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* --- SCÈNE --- */
+  .scene {
+    perspective: 400px !important;
+  }
+
+  /* --- HEADER --- */
+  header {
+    font-size: 0.85rem;
+    top: 16px;
+    letter-spacing: 0.1em;
+  }
+
+  /* --- MENU BURGER --- */
+  .menu-stack {
+    top: 16px;
+    left: 16px;
+  }
+  .menu-main-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* --- CARTEL LATÉRAL → BOTTOM BAR sur mobile --- */
+  #info-sidebar {
+    right: auto;
+    bottom: 24px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    width: calc(100% - 48px);
+    max-width: 380px;
+    border-left: none;
+    border-top: 1px solid rgba(141, 119, 95, 0.3);
+    padding-left: 0;
+    padding-top: 14px;
+    text-align: center;
+    transition:
+      transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 1.2s ease;
+  }
+
+  body.loaded #info-sidebar {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .info-header {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .info-indicator {
+    margin-top: 12px;
+  }
+
+  #side-title {
+    font-size: 1rem;
+  }
+
+  /* --- POP-UP PLEIN ÉCRAN --- */
+  #project-detail {
+    width: 100%;
+    max-width: 100%;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: translate(0, 10%) scale(0.98);
+    border-radius: 16px 16px 0 0;
+  }
+
+  #project-detail.active {
+    transform: translate(0, 0) scale(1);
+  }
+
+  .popup-container {
+    flex-direction: column;
+    height: auto;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .popup-image-side {
+    height: 200px;
+    flex: none;
+  }
+
+  .popup-info-side {
+    padding: 24px;
+  }
+
+  #project-title {
+    font-size: 1.3rem;
+  }
+
+  /* --- SCROLL HINT --- */
+  #scroll-hint {
+    bottom: 100px; /* Au-dessus du cartel */
+    font-size: 0.6rem;
+  }
+
+  /* --- TRANSITIONS ÉTAGES --- */
+  body.transition-up #info-sidebar {
+    transform: translateX(-50%) translateY(100px);
+  }
+}
+
+/* Très petits écrans */
+@media (max-width: 380px) {
+  header { font-size: 0.75rem; }
+  #side-title { font-size: 0.9rem; }
+}
