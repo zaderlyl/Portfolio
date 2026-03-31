@@ -303,7 +303,7 @@ function goToNextFloor() {
     onComplete: () => {
       // AJOUT : On passe le paramètre 'from=etage1' pour que l'étage 2 
       // sache qu'il doit aussi faire une animation spécifique
-      window.location.href = "../Etage2/etage2.html?from=etage1";
+    window.location.href = "../Etage2/etage2.html?from=etage1";
     }
   });
 
