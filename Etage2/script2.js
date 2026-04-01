@@ -1,6 +1,6 @@
 /**
- * CONFIGURATION & ÉTAT
- */
+config
+*/
 const ring = document.getElementById("ring");
 const elements = Array.from(ring.children);
 const titleDisplay = document.getElementById("category-title");
@@ -20,38 +20,34 @@ let rotation = 0;
 let selectedCard = null;
 
 /**
- * INITIALISATION & ARRIVÉE DEPUIS L'ÉTAGE 1
- */
+arrivé etage 1
+*/
 window.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const frometage1 = urlParams.get("from") === "etage1";
 
   if (frometage1) {
-    // 1. On définit une rotation de départ (pour l'effet de spin)
     rotation = 1080;
 
-    // On prépare l'état initial : Très haut (-1500) et incliné vers l'arrière
     gsap.set(ring, {
-      y: -1500,        // Plus haut pour un effet "ciel" marqué
-      rotationX: 80,   // Incliné dans l'autre sens pour la perspective de descente
+      y: -1500,        
+      rotationX: 80,   
       opacity: 0,
       scale: 0.8,
     });
 
     const tl = gsap.timeline();
 
-    // 2. Animation de descente
     tl.to(ring, {
       y: 0,
       rotationX: 0,
       opacity: 1,
       scale: 1,
       duration: 2.2,
-      ease: "power4.out", // Ease plus doux pour l'atterrissage
+      ease: "power4.out", 
       clearProps: "all",
     });
 
-    // Animation de la rotation synchronisée
     tl.to(
       { val: rotation },
       {
@@ -63,7 +59,7 @@ window.addEventListener("DOMContentLoaded", () => {
           positionCards(rotation);
         },
       },
-      "<" // Déclenchement simultané
+      "<" 
     );
   } else {
     positionCards(rotation);
@@ -75,8 +71,8 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * LOGIQUE DU RING (3D)
- */
+ring et logique
+*/
 function positionCards(rot) {
   const angleStep = 360 / total;
   let activeDivider = null;
@@ -89,25 +85,15 @@ function positionCards(rot) {
     const x = radius * Math.sin(rad);
     const z = radius * Math.cos(rad);
 
-    /** * 1. CALCUL DE PROFONDEUR (Factor)
-     * factor = 1 quand la carte est devant (z = radius)
-     * factor = 0 quand la carte est derrière (z = -radius)
-     */
     const factor = (z + radius) / (2 * radius);
 
-    /** * 2. EFFETS VISUELS (Gris et Opacité)
-     */
-    const gray = (1 - factor) * 100; // 100% gris derrière, 0% devant
-    const bright = 0.8 + factor * 0.7; // 30% de lumière derrière, 100% devant
-    const opacity = 0.5 + factor * 0.5; // 50% d'opacité derrière, 100% devant
+    const gray = (1 - factor) * 100; 
+    const bright = 0.8 + factor * 0.7; 
+    const opacity = 0.5 + factor * 0.5; 
 
     el.style.filter = `grayscale(${gray}%) brightness(${bright})`;
     el.style.opacity = opacity;
 
-    /** * 3. INCLINAISON (Axe X)
-     * On utilise z pour décaler la hauteur (Y).
-     * Plus z est petit (derrière), plus translateY diminue (monte).
-     */
     const tiltY = z * -0.2; // Ajuste 0.2 pour incliner plus ou moins
 
     el.dataset.angle = angle;
@@ -117,7 +103,6 @@ function positionCards(rot) {
     const faceRotation = -x * 0.15;
     const rotationY = angle + faceRotation;
 
-    // Application du transform avec le nouveau tiltY
     el.style.transform = `translateX(${x}px) translateZ(${z}px) translateY(calc(-50% - ${tiltY}px)) rotateY(${rotationY}deg)`;
     el.style.zIndex = Math.round(z);
 
@@ -163,8 +148,9 @@ function positionCards(rot) {
 }
 
 /**
- * NAVIGATION
- */
+nav
+*/
+
 window.addEventListener("keydown", (e) => {
   if (selectedCard) return;
   if (e.key === "ArrowDown") {
@@ -181,16 +167,12 @@ window.addEventListener(
   "wheel",
   (e) => {
     if (selectedCard) return;
-    hideScrollHint(); // <--- ICI : Disparition de l'indice
+    hideScrollHint(); 
     rotation += e.deltaY * 0.15;
     positionCards(rotation);
   },
   { passive: true },
 );
-
-/**
- * NAVIGATION VERS LA BIO (FLÈCHE BAS)
- */
 window.addEventListener("keydown", (e) => {
   if (selectedCard) return;
   if (e.key === "ArrowDown") {
@@ -198,9 +180,7 @@ window.addEventListener("keydown", (e) => {
     }
 });
 
-/**
- * UTILS UX
- */
+
 function hideScrollHint() {
   const hint = document.getElementById("scroll-hint");
   if (hint) {
@@ -216,9 +196,6 @@ function goToNextFloor() {
   document.body.style.pointerEvents = "none";
   document.body.classList.add("transition-up");
 
-  // 1. On définit la rotation cible :
-  // On prend la rotation actuelle et on ajoute par exemple 3 tours complets (3 * 360)
-  // pour créer cet effet de lancer au pavé tactile.
   const spinRotation = rotation - 1080;
 
   const tl = gsap.timeline({
@@ -227,8 +204,6 @@ function goToNextFloor() {
     },
   });
 
-  // On utilise un proxy (un objet vide) pour animer la variable 'rotation'
-  // Cela permet de garder la logique de positionCards() active pendant l'envolée
   tl.to(ring, {
     y: 100,
     duration: 0.4,
@@ -241,13 +216,12 @@ function goToNextFloor() {
         duration: 1.6,
         ease: "expo.inOut",
         onUpdate: function () {
-          // À chaque frame de l'animation, on met à jour la rotation globale
           rotation = this.targets()[0].val;
           positionCards(rotation);
         },
       },
       "<",
-    ) // "<" signifie que cette animation démarre en même temps que l'envolée
+    ) 
     .to(
       ring,
       {
@@ -264,8 +238,8 @@ function goToNextFloor() {
 }
 
 /**
- * POP-UP & ÉVÉNEMENTS
- */
+affichage projet
+*/
 function animateRotation(delta, duration, callback) {
   const start = rotation;
   const startTime = performance.now();
@@ -367,9 +341,6 @@ function goToBeforeFloor() {
   document.body.style.pointerEvents = "none";
   document.body.classList.add("transition-down");
 
-  // 1. On définit la rotation cible :
-  // On prend la rotation actuelle et on ajoute par exemple 3 tours complets (3 * 360)
-  // pour créer cet effet de lancer au pavé tactile.
   const spinRotation = rotation - -1080;
 
   const tl = gsap.timeline({
@@ -378,8 +349,6 @@ function goToBeforeFloor() {
     },
   });
 
-  // On utilise un proxy (un objet vide) pour animer la variable 'rotation'
-  // Cela permet de garder la logique de positionCards() active pendant l'envolée
   tl.to(ring, {
     y: -100,
     duration: 0.4,
@@ -392,13 +361,12 @@ function goToBeforeFloor() {
         duration: 1.6,
         ease: "expo.inOut",
         onUpdate: function () {
-          // À chaque frame de l'animation, on met à jour la rotation globale
           rotation = this.targets()[0].val;
           positionCards(rotation);
         },
       },
       "<",
-    ) // "<" signifie que cette animation démarre en même temps que l'envolée
+    ) 
     .to(
       ring,
       {
