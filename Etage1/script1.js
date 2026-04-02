@@ -9,23 +9,20 @@ const popup = document.getElementById("project-detail");
 
 const sideTitle = document.getElementById("side-title");
 const sideCategory = document.getElementById("side-category");
-const sideYear = document.getElementById("side-year"); 
+const sideYear = document.getElementById("side-year");
 const progressBar = document.getElementById("progress-bar");
 
 const total = elements.length;
-
-// Rayon adaptatif selon la taille de l'écran
-function getRadius() {
-  return window.innerWidth < 600 ? 130 : window.innerWidth < 900 ? 190 : 260;
-}
-let radius = getRadius();
-window.addEventListener("resize", () => { radius = getRadius(); positionCards(rotation); });
-
+const radius = 260;
 const SEUIL_CENTRE = 10;
 
 let rotation = 0;
 let selectedCard = null;
 let snapTimeout = null;
+
+// --- ÉTAT DU CAROUSEL ---
+let carouselImages = [];
+let carouselIndex = 0;
 
 /**
  * INITIALISATION & ARRIVÉE DEPUIS LA BIO
@@ -33,42 +30,27 @@ let snapTimeout = null;
 window.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const fromBio = urlParams.get('from') === 'bio';
-  const fromEtage2 = urlParams.get('from') === 'etage2'; // On détecte la provenance de l'étage 2
+  const fromEtage2 = urlParams.get('from') === 'etage2';
 
   if (fromBio || fromEtage2) {
     const tl = gsap.timeline();
-    
+
     if (fromBio) {
-      // --- ARRIVÉE DEPUIS LE HAUT (BIO) ---
-      rotation = 1080; 
+      rotation = 1080;
       gsap.set(ring, { y: -1200, rotationX: -80, opacity: 0, scale: 0.5 });
     } else if (fromEtage2) {
-      // --- ARRIVÉE DEPUIS LE BAS (ÉTAGE 2) ---
-      rotation = -1080; // Rotation inverse
-      gsap.set(ring, { 
-        y: 1200,        // Part du bas (sol)
-        rotationX: 80,  // Inclinaison inverse
-        opacity: 0, 
-        scale: 0.5 
-      });
+      rotation = -1080;
+      gsap.set(ring, { y: 1200, rotationX: 80, opacity: 0, scale: 0.5 });
     }
 
-    // Animation commune pour revenir à la position normale
     tl.to(ring, {
-      y: 0,
-      rotationX: 0,
-      opacity: 1,
-      scale: 1,
-      duration: 2.5,
-      ease: "expo.out",
-      clearProps: "all"
+      y: 0, rotationX: 0, opacity: 1, scale: 1,
+      duration: 2.5, ease: "expo.out", clearProps: "all"
     });
 
     tl.to({ val: rotation }, {
-      val: 0,
-      duration: 2.5,
-      ease: "expo.out",
-      onUpdate: function() {
+      val: 0, duration: 2.5, ease: "expo.out",
+      onUpdate: function () {
         rotation = this.targets()[0].val;
         positionCards(rotation);
       }
@@ -78,9 +60,7 @@ window.addEventListener("DOMContentLoaded", () => {
     positionCards(rotation);
   }
 
-  setTimeout(() => {
-    document.body.classList.add("loaded");
-  }, 100);
+  setTimeout(() => { document.body.classList.add("loaded"); }, 100);
 });
 
 /**
@@ -98,35 +78,21 @@ function positionCards(rot) {
     const x = radius * Math.sin(rad);
     const z = radius * Math.cos(rad);
 
-    /** * 1. CALCUL DE PROFONDEUR (Factor)
-     * factor = 1 quand la carte est devant (z = radius)
-     * factor = 0 quand la carte est derrière (z = -radius)
-     */
     const factor = (z + radius) / (2 * radius);
-
-    /** * 2. EFFETS VISUELS (Gris et Opacité)
-     */
-    const gray = (1 - factor) * 100;      // 100% gris derrière, 0% devant
-    const bright = 0.8 + (factor * 0.7); // 30% de lumière derrière, 100% devant
-    const opacity = 0.5 + (factor * 0.5); // 50% d'opacité derrière, 100% devant
+    const gray = (1 - factor) * 100;
+    const bright = 0.8 + (factor * 0.7);
+    const opacity = 0.5 + (factor * 0.5);
 
     el.style.filter = `grayscale(${gray}%) brightness(${bright})`;
     el.style.opacity = opacity;
 
-    /** * 3. INCLINAISON (Axe X)
-     * On utilise z pour décaler la hauteur (Y). 
-     * Plus z est petit (derrière), plus translateY diminue (monte).
-     */
-    const tiltY = z * -0.2; // Ajuste 0.2 pour incliner plus ou moins
-
+    const tiltY = z * -0.2;
     el.dataset.angle = angle;
     if (x < 0) el.setAttribute("data-spine", "right");
     else el.removeAttribute("data-spine");
 
     const faceRotation = -x * 0.15;
     const rotationY = angle + faceRotation;
-
-    // Application du transform avec le nouveau tiltY
     el.style.transform = `translateX(${x}px) translateZ(${z}px) translateY(calc(-50% - ${tiltY}px)) rotateY(${rotationY}deg)`;
     el.style.zIndex = Math.round(z);
 
@@ -135,13 +101,9 @@ function positionCards(rot) {
     }
     if (z > 0) {
       const dist = Math.abs(x);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestEl = el;
-      }
+      if (dist < minDistance) { minDistance = dist; closestEl = el; }
     }
   });
-  
 
   if (activeDivider?.dataset.category) titleDisplay.textContent = activeDivider.dataset.category;
 
@@ -169,111 +131,141 @@ function positionCards(rot) {
   }
 }
 
+/**
+ * CAROUSEL
+ */
+function buildCarousel(images) {
+  const track = document.getElementById("carousel-track");
+  const dotsContainer = document.getElementById("carousel-dots");
+  const counter = document.getElementById("carousel-counter");
+  const btnPrev = document.getElementById("carousel-prev");
+  const btnNext = document.getElementById("carousel-next");
 
+  carouselImages = images;
+  carouselIndex = 0;
+
+  track.innerHTML = "";
+  dotsContainer.innerHTML = "";
+
+  images.forEach((src, i) => {
+    const slide = document.createElement("div");
+    slide.className = "carousel-slide";
+    const img = document.createElement("img");
+    img.src = src.trim();
+    img.alt = `Image ${i + 1}`;
+    slide.appendChild(img);
+    track.appendChild(slide);
+  });
+
+  if (images.length > 1) {
+    images.forEach((_, i) => {
+      const dot = document.createElement("button");
+      dot.className = "carousel-dot" + (i === 0 ? " active" : "");
+      dot.setAttribute("aria-label", `Image ${i + 1}`);
+      dot.addEventListener("click", () => goToSlide(i));
+      dotsContainer.appendChild(dot);
+    });
+  }
+
+  const showArrows = images.length > 1;
+  btnPrev.style.display = showArrows ? "flex" : "none";
+  btnNext.style.display = showArrows ? "flex" : "none";
+  dotsContainer.style.display = showArrows ? "flex" : "none";
+  counter.style.display = showArrows ? "block" : "none";
+
+  updateCarousel();
+}
+
+function goToSlide(index) {
+  carouselIndex = (index + carouselImages.length) % carouselImages.length;
+  updateCarousel();
+}
+
+function updateCarousel() {
+  const track = document.getElementById("carousel-track");
+  const dotsContainer = document.getElementById("carousel-dots");
+  const counter = document.getElementById("carousel-counter");
+
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+
+  const dots = dotsContainer.querySelectorAll(".carousel-dot");
+  dots.forEach((dot, i) => dot.classList.toggle("active", i === carouselIndex));
+  counter.textContent = `${carouselIndex + 1} / ${carouselImages.length}`;
+}
+
+document.getElementById("carousel-prev").addEventListener("click", () => goToSlide(carouselIndex - 1));
+document.getElementById("carousel-next").addEventListener("click", () => goToSlide(carouselIndex + 1));
+
+window.addEventListener("keydown", (e) => {
+  if (!selectedCard) return;
+  if (e.key === "ArrowLeft") goToSlide(carouselIndex - 1);
+  if (e.key === "ArrowRight") goToSlide(carouselIndex + 1);
+});
+
+(function () {
+  let touchStartX = 0;
+  const carousel = document.getElementById("carousel");
+  carousel.addEventListener("touchstart", (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  carousel.addEventListener("touchend", (e) => {
+    const delta = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 40) goToSlide(carouselIndex + (delta > 0 ? 1 : -1));
+  }, { passive: true });
+})();
+
+/**
+ * ADAPTATION TYPOGRAPHIQUE
+ * Titre  : réduction fluide par paliers selon le nombre de caractères
+ * Desc   : scroll discret + fondu bas si le texte dépasse la zone
+ */
+function adaptTextSize(titleEl, descEl) {
+  // --- TITRE ---
+  const len = titleEl.textContent.length;
+  let size;
+  if      (len <= 20) size = "1.8rem";
+  else if (len <= 35) size = "1.45rem";
+  else if (len <= 50) size = "1.15rem";
+  else                size = "0.95rem";
+  titleEl.style.fontSize = size;
+  // Transition fluide côté CSS
+  titleEl.style.transition = "font-size 0.3s ease";
+
+  // --- DESCRIPTION ---
+  const descLen = descEl.textContent.length;
+  descEl.style.fontSize = descLen > 280 ? "0.85rem" : "0.95rem";
+  descEl.scrollTop = 0;
+
+  // Affiche/masque le fondu bas selon l'overflow réel
+  const wrapper = descEl.closest(".desc-wrapper");
+  if (wrapper) {
+    const refresh = () => {
+      const overflow = descEl.scrollHeight > descEl.clientHeight + 2;
+      const atBottom = descEl.scrollTop + descEl.clientHeight >= descEl.scrollHeight - 4;
+      wrapper.classList.toggle("has-overflow", overflow && !atBottom);
+    };
+    descEl.removeEventListener("scroll", refresh);
+    descEl.addEventListener("scroll", refresh);
+    setTimeout(refresh, 60); // laisse le DOM se stabiliser
+  }
+}
 
 /**
  * NAVIGATION
  */
 window.addEventListener("keydown", (e) => {
-  if (selectedCard) return; 
+  if (selectedCard) return;
   if (e.key === "ArrowDown") { hideScrollHint(); goToNextFloor(); }
-  if (e.key === "ArrowUp") { hideScrollHint(); goToBeforeFloor(); }
-  if (e.key === "Escape") closePopup();
+  if (e.key === "ArrowUp")   { hideScrollHint(); goToBeforeFloor(); }
+  if (e.key === "Escape")    closePopup();
 });
 
 window.addEventListener("wheel", (e) => {
   if (selectedCard) return;
   hideScrollHint();
-  
   rotation += e.deltaY * 0.15;
   positionCards(rotation);
-
-  // --- LOGIQUE DE CRANTAGE ---
-  clearTimeout(snapTimeout); // On annule le snap précédent
-  snapTimeout = setTimeout(() => {
-    snapToClosest(); // On recale après 200ms d'inactivité
-  }, 200);
-}, { passive: true });
-
-/**
- * NAVIGATION VERS LA BIO (FLÈCHE BAS)
- */
-window.addEventListener("keydown", (e) => {
-  if (selectedCard) return; 
-  if (e.key === "ArrowDown") {
-    goToBeforeFloor();
-  }
-  if (e.key === "ArrowUp") {
-    goToNextFloor();
-   }
-});
-
-
-/**
- * TOUCH SUPPORT (Mobile)
- */
-let touchStartX = 0;
-let touchStartY = 0;
-let lastTouchX = 0;
-let isTouching = false;
-let touchVelocity = 0;
-let lastTouchTime = 0;
-
-window.addEventListener("touchstart", (e) => {
-  if (selectedCard) return;
-  const touch = e.touches[0];
-  touchStartX = touch.clientX;
-  touchStartY = touch.clientY;
-  lastTouchX = touch.clientX;
-  touchVelocity = 0;
-  lastTouchTime = performance.now();
-  isTouching = true;
   clearTimeout(snapTimeout);
+  snapTimeout = setTimeout(() => { snapToClosest(); }, 200);
 }, { passive: true });
-
-window.addEventListener("touchmove", (e) => {
-  if (selectedCard || !isTouching) return;
-  const touch = e.touches[0];
-  const now = performance.now();
-  const dt = now - lastTouchTime;
-
-  // Détermine si le geste est plutôt horizontal (rotation) ou vertical (navigation)
-  const dx = touch.clientX - touchStartX;
-  const dy = touch.clientY - touchStartY;
-
-  // On laisse défiler verticalement seulement si l'angle est clairement vers le bas
-  if (Math.abs(dy) > Math.abs(dx) * 2 && Math.abs(dy) > 30) return;
-
-  const delta = touch.clientX - lastTouchX;
-  touchVelocity = dt > 0 ? delta / dt : 0;
-
-  rotation -= delta * 0.5; // Sensibilité du swipe
-  positionCards(rotation);
-  hideScrollHint();
-
-  lastTouchX = touch.clientX;
-  lastTouchTime = now;
-}, { passive: true });
-
-window.addEventListener("touchend", (e) => {
-  if (!isTouching) return;
-  isTouching = false;
-
-  // Inertie après le lâcher
-  let velocity = touchVelocity * 15;
-  const decelerate = () => {
-    if (Math.abs(velocity) < 0.3) {
-      snapToClosest();
-      return;
-    }
-    rotation -= velocity;
-    velocity *= 0.88; // Friction
-    positionCards(rotation);
-    requestAnimationFrame(decelerate);
-  };
-  requestAnimationFrame(decelerate);
-}, { passive: true });
-
 
 /**
  * UTILS UX
@@ -283,53 +275,20 @@ function hideScrollHint() {
   if (hint) {
     hint.style.opacity = "0";
     hint.style.transform = "translateX(-50%) translateY(20px)";
-    setTimeout(() => hint.remove(), 800); // Supprime du code après l'animation
+    setTimeout(() => hint.remove(), 800);
   }
 }
 
-
-
-
 function goToNextFloor() {
   if (document.body.classList.contains("transition-up")) return;
-  
   document.body.style.pointerEvents = "none";
   document.body.classList.add("transition-up");
-
-  // On accentue la rotation pour l'effet de vitesse (sens inverse pour la descente)
-  const spinRotation = rotation + 1080; 
-
-  const tl = gsap.timeline({
-    onComplete: () => {
-      // AJOUT : On passe le paramètre 'from=etage1' pour que l'étage 2 
-      // sache qu'il doit aussi faire une animation spécifique
-    window.location.href = "../Etage2/etage2.html?from=etage1";
-    }
-  });
-
-  tl.to(ring, {
-    y: -50, // Petit sursaut vers le haut avant de tomber
-    duration: 0.3,
-    ease: "power2.out"
-  })
-  .to({ val: rotation }, {
-    val: spinRotation,
-    duration: 1.6,
-    ease: "expo.inOut",
-    onUpdate: function() {
-      rotation = this.targets()[0].val;
-      positionCards(rotation);
-    }
-  }, "<")
-  .to(ring, {
-    y: 2500,        // DESCENTE : Valeur positive pour aller vers le bas
-    rotationX: -90, // INCLINAISON : On bascule vers l'arrière
-    opacity: 0,
-    scale: 0.5,     // On réduit un peu moins pour garder l'effet de proximité au sol
-    duration: 1.6,
-    ease: "expo.in",
-    force3D: true
-  }, "<");
+  const spinRotation = rotation + 1080;
+  const tl = gsap.timeline({ onComplete: () => { window.location.href = "../Etage2/etage2.html?from=etage1"; } });
+  tl.to(ring, { y: -50, duration: 0.3, ease: "power2.out" })
+    .to({ val: rotation }, { val: spinRotation, duration: 1.6, ease: "expo.inOut",
+      onUpdate: function () { rotation = this.targets()[0].val; positionCards(rotation); } }, "<")
+    .to(ring, { y: 2500, rotationX: -90, opacity: 0, scale: 0.5, duration: 1.6, ease: "expo.in", force3D: true }, "<");
 }
 
 /**
@@ -340,7 +299,9 @@ function animateRotation(delta, duration, callback) {
   const startTime = performance.now();
   function animate(t) {
     const progress = Math.min((t - startTime) / duration, 1);
-    rotation = start + delta * (progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2);
+    rotation = start + delta * (progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2);
     positionCards(rotation);
     if (progress < 1) requestAnimationFrame(animate);
     else callback?.();
@@ -352,14 +313,23 @@ function selectCard(card) {
   if (selectedCard) return;
   selectedCard = card;
   const currentAngle = parseFloat(card.dataset.angle);
-  const delta = -currentAngle;
-  animateRotation(delta, 500, () => { openPopup(card); });
+  animateRotation(-currentAngle, 500, () => { openPopup(card); });
 }
 
 function openPopup(card) {
-  document.getElementById("project-img").src = card.dataset.img || "";
-  document.getElementById("project-desc").textContent = card.dataset.desc || "";
-  document.getElementById("project-title").textContent = card.dataset.title || "";
+  const rawImgs = card.dataset.img || "";
+  const images = rawImgs.split(",").map(s => s.trim()).filter(Boolean);
+  buildCarousel(images.length > 0 ? images : [""]);
+
+  const titleEl = document.getElementById("project-title");
+  const descEl  = document.getElementById("project-desc");
+
+  titleEl.textContent = card.dataset.title || "";
+  descEl.textContent  = card.dataset.desc  || "";
+
+  // Adapter les tailles après injection du contenu
+  adaptTextSize(titleEl, descEl);
+
   overlay.style.opacity = "1";
   overlay.style.pointerEvents = "auto";
   popup.style.display = "block";
@@ -378,14 +348,7 @@ elements.forEach((el) => {
   if (el.classList.contains("card")) el.addEventListener("click", () => selectCard(el));
 });
 
-window.addEventListener("wheel", (e) => {
-  if (selectedCard) return;
-  rotation += e.deltaY * 0.15;
-  positionCards(rotation);
-}, { passive: true });
-
 overlay.addEventListener("click", closePopup);
-window.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopup(); });
 
 const menuStack = document.querySelector(".menu-stack");
 const menuToggle = document.getElementById("menu-toggle");
@@ -406,69 +369,24 @@ if (homeLink) {
   });
 }
 
-
-
 function goToBeforeFloor() {
   if (document.body.classList.contains("transition-down")) return;
-  
   document.body.style.pointerEvents = "none";
   document.body.classList.add("transition-down");
-
-  // 1. On définit la rotation cible : 
-  // On prend la rotation actuelle et on ajoute par exemple 3 tours complets (3 * 360)
-  // pour créer cet effet de lancer au pavé tactile.
-  const spinRotation = rotation - (-1080); 
-
-  const tl = gsap.timeline({
-    onComplete: () => {
-      window.location.href = "../bio/bio.html";
-    }
-  });
-
-  // On utilise un proxy (un objet vide) pour animer la variable 'rotation'
-  // Cela permet de garder la logique de positionCards() active pendant l'envolée
-  tl.to(ring, {
-    y: -100,
-    duration: 0.4,
-    ease: "power2.out"
-  })
-  .to({ val: rotation }, {
-    val: spinRotation,
-    duration: 1.6,
-    ease: "expo.inOut",
-    onUpdate: function() {
-      // À chaque frame de l'animation, on met à jour la rotation globale
-      rotation = this.targets()[0].val;
-      positionCards(rotation);
-    }
-  }, "<") // "<" signifie que cette animation démarre en même temps que l'envolée
-  .to(ring, {
-    y: -2500,
-    rotationX: -110,
-    opacity: 0,
-    scale: 0.2,
-    duration: 1.6,
-    ease: "expo.in",
-    force3D: true
-  }, "<");
+  const spinRotation = rotation - (-1080);
+  const tl = gsap.timeline({ onComplete: () => { window.location.href = "../bio/bio.html"; } });
+  tl.to(ring, { y: -100, duration: 0.4, ease: "power2.out" })
+    .to({ val: rotation }, { val: spinRotation, duration: 1.6, ease: "expo.inOut",
+      onUpdate: function () { rotation = this.targets()[0].val; positionCards(rotation); } }, "<")
+    .to(ring, { y: -2500, rotationX: -110, opacity: 0, scale: 0.2, duration: 1.6, ease: "expo.in", force3D: true }, "<");
 }
 
 function snapToClosest() {
   const angleStep = 360 / total;
-  
-  // On calcule l'index de la carte qui est actuellement la plus proche du centre
-  // (On utilise Math.round pour trouver le "cran" le plus proche)
   const closestIndex = Math.round(-rotation / angleStep);
   const targetRotation = -closestIndex * angleStep;
-
-  // Animation fluide vers le cran avec GSAP
   gsap.to({ val: rotation }, {
-    val: targetRotation,
-    duration: 0.6,
-    ease: "back.out(1.7)", // Un petit effet de rebond pour le côté mécanique
-    onUpdate: function() {
-      rotation = this.targets()[0].val;
-      positionCards(rotation);
-    }
+    val: targetRotation, duration: 0.6, ease: "back.out(1.7)",
+    onUpdate: function () { rotation = this.targets()[0].val; positionCards(rotation); }
   });
 }
